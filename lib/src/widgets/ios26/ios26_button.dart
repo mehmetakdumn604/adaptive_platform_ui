@@ -1,7 +1,9 @@
 import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+
 import '../../style/sf_symbol.dart';
 
 /// iOS 26 native button styles (Liquid Glass design)
@@ -71,7 +73,8 @@ class IOS26Button extends StatefulWidget {
     this.useSmoothRectangleBorder = true,
   }) : child = null,
        isChildMode = false,
-       sfSymbol = null;
+       sfSymbol = null,
+       platformIcon = null;
 
   /// Creates an iOS 26 style button with a custom child widget
   /// The child will be overlaid on top of the native button background
@@ -90,7 +93,8 @@ class IOS26Button extends StatefulWidget {
   }) : label = '',
        textColor = null,
        isChildMode = true,
-       sfSymbol = null;
+       sfSymbol = null,
+       platformIcon = null;
 
   /// Creates an iOS 26 style button with a native SF Symbol icon
   const IOS26Button.sfSymbol({
@@ -108,7 +112,27 @@ class IOS26Button extends StatefulWidget {
   }) : label = '',
        textColor = null,
        child = null,
-       isChildMode = false;
+       isChildMode = false,
+       platformIcon = null;
+
+  /// Creates an iOS 26 style button with a platform icon (SF Symbol, Asset, or SVG)
+  const IOS26Button.platformIcon({
+    super.key,
+    required this.onPressed,
+    required this.platformIcon,
+    this.style = IOS26ButtonStyle.glass,
+    this.size = IOS26ButtonSize.medium,
+    this.color,
+    this.enabled = true,
+    this.padding,
+    this.borderRadius,
+    this.minSize,
+    this.useSmoothRectangleBorder = true,
+  }) : label = '',
+       textColor = null,
+       child = null,
+       isChildMode = false,
+       sfSymbol = null;
 
   /// The callback that is called when the button is tapped
   final VoidCallback? onPressed;
@@ -120,7 +144,12 @@ class IOS26Button extends StatefulWidget {
   final Widget? child;
 
   /// The SF Symbol to display (used in .sfSymbol() constructor)
+  /// Deprecated: Use platformIcon instead for better flexibility
   final SFSymbol? sfSymbol;
+
+  /// The platform icon to display (used in .platformIcon() constructor)
+  /// Supports SF Symbols, Asset images (PNG/JPEG), and SVG images
+  final PlatformIcon? platformIcon;
 
   /// Whether this is child mode
   final bool isChildMode;
@@ -193,15 +222,11 @@ class _IOS26ButtonState extends State<IOS26Button> {
 
     // Update native side if properties changed
     if (oldWidget.style != widget.style) {
-      _channel.invokeMethod('setStyle', {
-        'style': _styleToString(widget.style),
-      });
+      _channel.invokeMethod('setStyle', {'style': _styleToString(widget.style)});
     }
 
     if (oldWidget.enabled != widget.enabled) {
-      _channel.invokeMethod('setEnabled', {
-        'enabled': widget.enabled && widget.onPressed != null,
-      });
+      _channel.invokeMethod('setEnabled', {'enabled': widget.enabled && widget.onPressed != null});
     }
 
     if (oldWidget.label != widget.label) {
@@ -220,39 +245,86 @@ class _IOS26ButtonState extends State<IOS26Button> {
       });
     }
 
-    // Update SF Symbol if changed
-    if (oldWidget.sfSymbol?.name != widget.sfSymbol?.name ||
-        oldWidget.sfSymbol?.size != widget.sfSymbol?.size ||
-        oldWidget.sfSymbol?.color != widget.sfSymbol?.color) {
-      if (widget.sfSymbol != null) {
-        _channel.invokeMethod('setIcon', {
-          'iconName': widget.sfSymbol!.name,
-          'iconSize': widget.sfSymbol!.size,
-          if (widget.sfSymbol!.color != null)
-            'iconColor': _colorToARGB(widget.sfSymbol!.color!),
-        });
+    // Update icon if changed (support both SFSymbol and PlatformIcon)
+    final oldIcon = oldWidget.sfSymbol?.toPlatformIcon() ?? oldWidget.platformIcon;
+    final newIcon = widget.sfSymbol?.toPlatformIcon() ?? widget.platformIcon;
+
+    if (_hasIconChanged(oldIcon, newIcon)) {
+      if (newIcon != null) {
+        _channel.invokeMethod('setIcon', _iconToMap(newIcon));
       }
     }
   }
 
   Map<String, dynamic> _buildCreationParams() {
-    return {
+    final icon = widget.sfSymbol?.toPlatformIcon() ?? widget.platformIcon;
+    final params = <String, dynamic>{
       'id': _id,
       'label': widget.label,
       'style': _styleToString(widget.style),
       'size': _sizeToString(widget.size),
       'enabled': widget.enabled && widget.onPressed != null,
       'color': widget.color != null ? _colorToHex(widget.color!) : null,
-      'textColor': widget.textColor != null
-          ? _colorToHex(widget.textColor!)
-          : null,
+      'textColor': widget.textColor != null ? _colorToHex(widget.textColor!) : null,
       'isDark': MediaQuery.platformBrightnessOf(context) == Brightness.dark,
       'useSmoothRectangleBorder': widget.useSmoothRectangleBorder,
-      if (widget.sfSymbol != null) 'iconName': widget.sfSymbol!.name,
-      if (widget.sfSymbol != null) 'iconSize': widget.sfSymbol!.size,
-      if (widget.sfSymbol?.color != null)
-        'iconColor': _colorToARGB(widget.sfSymbol!.color!),
     };
+
+    if (icon != null) {
+      params.addAll(_iconToMap(icon));
+    }
+
+    return params;
+  }
+
+  /// Converts a PlatformIcon to a map for native communication
+  Map<String, dynamic> _iconToMap(PlatformIcon icon) {
+    return switch (icon) {
+      SFSymbolIcon(:final name, :final size, :final color) => {
+        'iconType': 'sfSymbol',
+        'iconName': name,
+        'iconSize': size,
+        if (color != null) 'iconColor': _colorToARGB(color),
+      },
+      AssetIcon(:final assetPath, :final size, :final color) => {
+        'iconType': 'asset',
+        'iconAssetPath': assetPath,
+        'iconSize': size,
+        if (color != null) 'iconColor': _colorToARGB(color),
+      },
+      SvgIcon(:final assetPath, :final size, :final color) => {
+        'iconType': 'svg',
+        'iconAssetPath': assetPath,
+        'iconSize': size,
+        if (color != null) 'iconColor': _colorToARGB(color),
+      },
+    };
+  }
+
+  /// Checks if the icon has changed
+  bool _hasIconChanged(PlatformIcon? oldIcon, PlatformIcon? newIcon) {
+    if (oldIcon == null && newIcon == null) return false;
+    if (oldIcon == null || newIcon == null) return true;
+
+    // Compare icons based on their type and properties
+    if (oldIcon is SFSymbolIcon && newIcon is SFSymbolIcon) {
+      return oldIcon.name != newIcon.name ||
+          oldIcon.size != newIcon.size ||
+          oldIcon.color != newIcon.color;
+    }
+    if (oldIcon is AssetIcon && newIcon is AssetIcon) {
+      return oldIcon.assetPath != newIcon.assetPath ||
+          oldIcon.size != newIcon.size ||
+          oldIcon.color != newIcon.color;
+    }
+    if (oldIcon is SvgIcon && newIcon is SvgIcon) {
+      return oldIcon.assetPath != newIcon.assetPath ||
+          oldIcon.size != newIcon.size ||
+          oldIcon.color != newIcon.color;
+    }
+
+    // Different types
+    return true;
   }
 
   String _styleToString(IOS26ButtonStyle style) {
@@ -355,43 +427,33 @@ class _IOS26ButtonState extends State<IOS26Button> {
 
   Widget _buildFallbackButton() {
     final buttonColor = widget.color ?? CupertinoColors.systemBlue;
-    final textStyle = TextStyle(
-      color: widget.textColor ?? CupertinoColors.white,
-    );
+    final textStyle = TextStyle(color: widget.textColor ?? CupertinoColors.white);
 
     // If child mode, use the child widget
-    final buttonChild = widget.isChildMode
-        ? widget.child!
-        : Text(widget.label, style: textStyle);
+    final buttonChild = widget.isChildMode ? widget.child! : Text(widget.label, style: textStyle);
 
     switch (widget.style) {
       case IOS26ButtonStyle.filled:
         return CupertinoButton.filled(
           onPressed: widget.enabled ? widget.onPressed : null,
-          padding:
-              widget.padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
           child: buttonChild,
         );
 
       case IOS26ButtonStyle.plain:
         return CupertinoButton(
           onPressed: widget.enabled ? widget.onPressed : null,
-          padding:
-              widget.padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
           child: widget.isChildMode
               ? widget.child!
-              : Text(
-                  widget.label,
-                  style: TextStyle(color: widget.textColor ?? buttonColor),
-                ),
+              : Text(widget.label, style: TextStyle(color: widget.textColor ?? buttonColor)),
         );
 
       default:
         return CupertinoButton(
           onPressed: widget.enabled ? widget.onPressed : null,
           color: buttonColor,
-          padding:
-              widget.padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
           child: buttonChild,
         );
     }

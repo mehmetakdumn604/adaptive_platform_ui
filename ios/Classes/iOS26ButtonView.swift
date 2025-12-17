@@ -1,12 +1,18 @@
 import Flutter
 import UIKit
 
+#if canImport(SVGKit)
+    import SVGKit
+#endif
+
 /// Factory for creating iOS 26 native button platform views
 class iOS26ButtonViewFactory: NSObject, FlutterPlatformViewFactory {
     private var messenger: FlutterBinaryMessenger
+    private var registrar: FlutterPluginRegistrar
 
-    init(messenger: FlutterBinaryMessenger) {
+    init(messenger: FlutterBinaryMessenger, registrar: FlutterPluginRegistrar) {
         self.messenger = messenger
+        self.registrar = registrar
         super.init()
     }
 
@@ -19,7 +25,8 @@ class iOS26ButtonViewFactory: NSObject, FlutterPlatformViewFactory {
             frame: frame,
             viewIdentifier: viewId,
             arguments: args,
-            binaryMessenger: messenger
+            binaryMessenger: messenger,
+            registrar: registrar
         )
     }
 
@@ -34,6 +41,7 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
     private var button: UIButton!
     private var channel: FlutterMethodChannel
     private var buttonId: Int
+    private var registrar: FlutterPluginRegistrar
 
     // Configuration
     private var buttonLabel: String = ""
@@ -43,7 +51,9 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
     private var textColor: UIColor?
     private var isEnabled: Bool = true
     private var isDark: Bool = false
-    private var iconName: String?
+    private var iconName: String?  // For SF Symbols (legacy support)
+    private var iconType: String?  // 'sfSymbol', 'asset', or 'svg'
+    private var iconAssetPath: String?  // For asset and SVG icons
     private var iconSize: CGFloat?
     private var iconColor: UIColor?
     private var useSmoothRectangleBorder: Bool = true
@@ -52,9 +62,11 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
         frame: CGRect,
         viewIdentifier viewId: Int64,
         arguments args: Any?,
-        binaryMessenger messenger: FlutterBinaryMessenger
+        binaryMessenger messenger: FlutterBinaryMessenger,
+        registrar: FlutterPluginRegistrar
     ) {
         _view = UIView(frame: frame)
+        self.registrar = registrar
 
         // Extract configuration from arguments
         if let config = args as? [String: Any] {
@@ -73,13 +85,20 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
                 textColor = UIColor(hexString: textColorHex)
             }
 
-            // SF Symbol icon configuration
-            iconName = config["iconName"] as? String
+            // Icon configuration (supports SF Symbol, Asset, and SVG)
+            iconType = config["iconType"] as? String
+            iconName = config["iconName"] as? String  // Legacy SF Symbol support
+            iconAssetPath = config["iconAssetPath"] as? String
             if let size = config["iconSize"] as? Double {
                 iconSize = CGFloat(size)
             }
             if let argb = config["iconColor"] as? Int {
                 iconColor = UIColor(argb: argb)
+            }
+
+            // If iconType is not set but iconName is, assume it's a legacy SF Symbol
+            if iconType == nil && iconName != nil {
+                iconType = "sfSymbol"
             }
 
             // Use smooth rectangle border setting
@@ -129,7 +148,7 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
             button.trailingAnchor.constraint(equalTo: _view.trailingAnchor),
             button.topAnchor.constraint(equalTo: _view.topAnchor),
             button.bottomAnchor.constraint(equalTo: _view.bottomAnchor),
-            button.heightAnchor.constraint(equalToConstant: getHeightForSize())
+            button.heightAnchor.constraint(equalToConstant: getHeightForSize()),
         ])
 
         // Low content hugging - button can expand if container wants
@@ -141,7 +160,9 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
         // Add press animation targets
         button.addTarget(self, action: #selector(buttonPressed), for: .touchDown)
-        button.addTarget(self, action: #selector(buttonReleased), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        button.addTarget(
+            self, action: #selector(buttonReleased),
+            for: [.touchUpInside, .touchUpOutside, .touchCancel])
 
         // Apply enabled state
         button.isEnabled = isEnabled
@@ -186,23 +207,242 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
             }
 
             // Set title or icon based on configuration
-            if let iconName = iconName {
-                // SF Symbol icon mode
-                if let image = UIImage(systemName: iconName) {
-                    var finalImage = image
+            if let iconType = iconType {
+                var finalImage: UIImage?
 
-                    // Apply icon size
-                    let symbolSize = iconSize ?? 24.0
-                    finalImage = image.applyingSymbolConfiguration(
-                        UIImage.SymbolConfiguration(pointSize: symbolSize)
-                    ) ?? image
-
-                    // Apply icon color
-                    if let color = iconColor {
-                        finalImage = finalImage.withTintColor(color, renderingMode: .alwaysOriginal)
+                switch iconType {
+                case "sfSymbol":
+                    // SF Symbol icon mode
+                    let symbolName = iconName ?? ""
+                    if let image = UIImage(systemName: symbolName) {
+                        let symbolSize = iconSize ?? 24.0
+                        finalImage =
+                            image.applyingSymbolConfiguration(
+                                UIImage.SymbolConfiguration(pointSize: symbolSize)
+                            ) ?? image
                     }
 
-                    config.image = finalImage
+                case "asset":
+                    // Asset image mode (PNG, JPEG, etc.)
+                    if let assetPath = iconAssetPath {
+                        // Load image from Flutter's asset bundle
+                        // Use FlutterPluginRegistrar to get the asset lookup key
+                        let lookupKey = registrar.lookupKey(forAsset: assetPath)
+
+                        // Try multiple methods to load the asset
+                        // Method 1: Try with lookup key from main bundle
+                        if let image = UIImage(named: lookupKey) {
+                            finalImage = image
+                        }
+                        // Method 2: Try loading from bundle path
+                        else if let bundlePath = Bundle.main.path(
+                            forResource: lookupKey, ofType: nil)
+                        {
+                            finalImage = UIImage(contentsOfFile: bundlePath)
+                        }
+                        // Method 3: Try with just the filename (Flutter sometimes uses just the filename)
+                        else {
+                            let assetName = (assetPath as NSString).lastPathComponent
+                            let assetNameWithoutExt = (assetName as NSString).deletingPathExtension
+
+                            // Try with full name first
+                            if let image = UIImage(named: assetName) {
+                                finalImage = image
+                            }
+                            // Try without extension
+                            else if let image = UIImage(named: assetNameWithoutExt) {
+                                finalImage = image
+                            }
+                            // Try with lookup key variations
+                            else {
+                                // Try with path components
+                                let pathComponents = assetPath.components(separatedBy: "/")
+                                if pathComponents.count > 0 {
+                                    let lastComponent = pathComponents.last!
+                                    if let image = UIImage(named: lastComponent) {
+                                        finalImage = image
+                                    } else {
+                                        let lastComponentWithoutExt = (lastComponent as NSString)
+                                            .deletingPathExtension
+                                        if let image = UIImage(named: lastComponentWithoutExt) {
+                                            finalImage = image
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Debug: Print if still not found
+                            if finalImage == nil {
+                                print("⚠️ Could not load asset: \(assetPath)")
+                                print("   Lookup key: \(lookupKey)")
+                                print("   Asset name: \(assetName)")
+                                print("   Trying main bundle resources...")
+                            }
+                        }
+
+                        // Resize image if needed (only if size is specified and different from original)
+                        if let image = finalImage, let size = iconSize {
+                            // Only resize if the size is significantly different from the original
+                            let originalSize = image.size
+                            let targetSize = CGSize(width: size, height: size)
+                            if abs(originalSize.width - size) > 1.0
+                                || abs(originalSize.height - size) > 1.0
+                            {
+                                finalImage = resizeImageHighQuality(image, to: targetSize)
+                            }
+                        }
+                    }
+
+                case "svg":
+                    // SVG icon mode using SVGKit
+                    #if canImport(SVGKit)
+                        if let assetPath = iconAssetPath {
+                            // Get the asset lookup key from Flutter
+                            let lookupKey = registrar.lookupKey(forAsset: assetPath)
+
+                            // Try to load SVG from bundle
+                            var svgImage: SVGKImage?
+                            var svgPath: String?
+
+                            // Method 1: Try with lookup key and .svg extension
+                            if let bundlePath = Bundle.main.path(
+                                forResource: lookupKey, ofType: "svg")
+                            {
+                                svgPath = bundlePath
+                            }
+                            // Method 2: Try with lookup key without extension
+                            else if let bundlePath = Bundle.main.path(
+                                forResource: lookupKey, ofType: nil)
+                            {
+                                svgPath = bundlePath
+                            }
+                            // Method 3: Try with just the filename
+                            else {
+                                let assetName = (assetPath as NSString).lastPathComponent
+                                let assetNameWithoutExt = (assetName as NSString)
+                                    .deletingPathExtension
+
+                                if let bundlePath = Bundle.main.path(
+                                    forResource: assetNameWithoutExt, ofType: "svg")
+                                {
+                                    svgPath = bundlePath
+                                } else if let bundlePath = Bundle.main.path(
+                                    forResource: assetName, ofType: nil)
+                                {
+                                    svgPath = bundlePath
+                                }
+                            }
+
+                            // Load SVG if path found
+                            if let path = svgPath {
+                                svgImage = SVGKImage(contentsOfFile: path)
+                            }
+
+                            // Convert SVG to UIImage with high quality
+                            if let svg = svgImage {
+                                // Get the size for rendering
+                                let targetSize = iconSize ?? 24.0
+
+                                // Use screen scale for retina display quality
+                                let scale = UIScreen.main.scale
+                                let scaledSize = CGSize(
+                                    width: targetSize * scale, height: targetSize * scale)
+
+                                // Set SVG size directly to scaled size for better quality
+                                // This renders the SVG at the target resolution from the start
+                                svg.size = scaledSize
+
+                                // Configure SVGKit for high quality rendering
+                                // Set the scale for rasterization if available
+                                if let svgLayer = svg.caLayerTree {
+                                    svgLayer.rasterizationScale = scale
+                                    svgLayer.contentsScale = scale
+                                }
+
+                                // Get the UIImage from SVG at high resolution
+                                if let uiImage = svg.uiImage {
+                                    // Create a new renderer format with proper scale
+                                    let format = UIGraphicsImageRendererFormat()
+                                    format.scale = scale
+                                    format.opaque = false
+
+                                    // Create renderer with custom format
+                                    let renderer = UIGraphicsImageRenderer(
+                                        size: scaledSize,
+                                        format: format
+                                    )
+
+                                    finalImage = renderer.image { context in
+                                        // Configure context for high quality vector rendering
+                                        let cgContext = context.cgContext
+                                        cgContext.interpolationQuality = .none  // No interpolation for vector graphics
+                                        cgContext.setShouldAntialias(true)
+                                        cgContext.setAllowsAntialiasing(true)
+
+                                        // Draw SVG directly at high resolution
+                                        uiImage.draw(in: CGRect(origin: .zero, size: scaledSize))
+                                    }
+
+                                    // Ensure the image has the correct scale
+                                    if let cgImage = finalImage?.cgImage {
+                                        finalImage = UIImage(
+                                            cgImage: cgImage,
+                                            scale: scale,
+                                            orientation: finalImage!.imageOrientation
+                                        )
+                                    }
+                                }
+                            } else {
+                                print("⚠️ Could not load SVG asset: \(assetPath)")
+                                print("   Lookup key: \(lookupKey)")
+                                print("   Tried paths with .svg extension and without")
+                            }
+                        }
+                    #else
+                        // SVGKit not available - fallback to PNG or show error
+                        if let assetPath = iconAssetPath {
+                            print("⚠️ SVGKit is not available. SVG support requires SVGKit library.")
+                            print("   Asset path: \(assetPath)")
+                            print(
+                                "   Please install SVGKit via CocoaPods or use PNG assets instead.")
+
+                            // Try to load as PNG fallback
+                            let pngPath = (assetPath as NSString).deletingPathExtension + ".png"
+                            let lookupKey = registrar.lookupKey(forAsset: pngPath)
+                            if let bundlePath = Bundle.main.path(
+                                forResource: lookupKey, ofType: nil)
+                            {
+                                finalImage = UIImage(contentsOfFile: bundlePath)
+                            } else if let image = UIImage(named: lookupKey) {
+                                finalImage = image
+                            }
+
+                            // Resize if needed
+                            if let image = finalImage, let size = iconSize {
+                                let targetSize = CGSize(width: size, height: size)
+                                finalImage = resizeImageHighQuality(image, to: targetSize)
+                            }
+                        }
+                    #endif
+
+                default:
+                    break
+                }
+
+                // Apply icon color tint if provided
+                // Only apply tint if color is explicitly provided
+                if let image = finalImage {
+                    if let color = iconColor {
+                        // Apply tint color with template rendering mode
+                        finalImage = image.withTintColor(color, renderingMode: .alwaysTemplate)
+                    } else {
+                        // Keep original colors if no tint is specified
+                        finalImage = image.withRenderingMode(.alwaysOriginal)
+                    }
+                }
+
+                if let image = finalImage {
+                    config.image = image
                     config.title = nil
                     config.attributedTitle = nil
                 }
@@ -310,7 +550,10 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
     @objc private func buttonReleased() {
         // Return to normal size with spring effect
-        UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5, options: .curveEaseInOut) {
+        UIView.animate(
+            withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.5,
+            options: .curveEaseInOut
+        ) {
             self.button.transform = .identity
         }
     }
@@ -328,7 +571,8 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
         switch call.method {
         case "setStyle":
             if let args = call.arguments as? [String: Any],
-               let style = args["style"] as? String {
+                let style = args["style"] as? String
+            {
                 buttonStyle = style
                 applyLiquidGlassStyle()
             }
@@ -336,7 +580,8 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
         case "setLabel":
             if let args = call.arguments as? [String: Any],
-               let label = args["label"] as? String {
+                let label = args["label"] as? String
+            {
                 buttonLabel = label
                 button.setTitle(label, for: .normal)
             }
@@ -344,7 +589,8 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
         case "setEnabled":
             if let args = call.arguments as? [String: Any],
-               let enabled = args["enabled"] as? Bool {
+                let enabled = args["enabled"] as? Bool
+            {
                 isEnabled = enabled
                 button.isEnabled = enabled
                 button.alpha = enabled ? 1.0 : 0.5
@@ -353,7 +599,8 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
         case "setColor":
             if let args = call.arguments as? [String: Any],
-               let colorHex = args["color"] as? String {
+                let colorHex = args["color"] as? String
+            {
                 buttonColor = UIColor(hexString: colorHex) ?? .systemBlue
                 applyLiquidGlassStyle()
             }
@@ -361,20 +608,29 @@ class iOS26ButtonView: NSObject, FlutterPlatformView {
 
         case "setIcon":
             if let args = call.arguments as? [String: Any] {
+                iconType = args["iconType"] as? String
                 iconName = args["iconName"] as? String
+                iconAssetPath = args["iconAssetPath"] as? String
                 if let size = args["iconSize"] as? Double {
                     iconSize = CGFloat(size)
                 }
                 if let argb = args["iconColor"] as? Int {
                     iconColor = UIColor(argb: argb)
                 }
+
+                // Legacy support: if iconType is not set but iconName is, assume SF Symbol
+                if iconType == nil && iconName != nil {
+                    iconType = "sfSymbol"
+                }
+
                 applyLiquidGlassStyle()
             }
             result(nil)
 
         case "setUseSmoothRectangleBorder":
             if let args = call.arguments as? [String: Any],
-               let useSmoothRect = args["useSmoothRectangleBorder"] as? Bool {
+                let useSmoothRect = args["useSmoothRectangleBorder"] as? Bool
+            {
                 useSmoothRectangleBorder = useSmoothRect
                 applyLiquidGlassStyle()
             }
@@ -432,11 +688,14 @@ extension UIColor {
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
 
-        let r, g, b, a: UInt64
+        let r: UInt64
+        let g: UInt64
+        let b: UInt64
+        let a: UInt64
         switch hex.count {
-        case 6: // RGB
+        case 6:  // RGB
             (r, g, b, a) = ((int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF, 255)
-        case 8: // ARGB or RGBA
+        case 8:  // ARGB or RGBA
             (a, r, g, b) = ((int >> 24) & 0xFF, (int >> 16) & 0xFF, (int >> 8) & 0xFF, int & 0xFF)
         default:
             return nil
@@ -457,4 +716,32 @@ extension UIColor {
         let b = CGFloat(argb & 0xFF) / 255.0
         self.init(red: r, green: g, blue: b, alpha: a)
     }
+}
+
+/// Helper function to resize UIImage with high quality
+func resizeImageHighQuality(_ image: UIImage, to size: CGSize) -> UIImage? {
+    // Use screen scale for better quality on retina displays
+    let scale = UIScreen.main.scale
+    let scaledSize = CGSize(width: size.width * scale, height: size.height * scale)
+
+    UIGraphicsBeginImageContextWithOptions(scaledSize, false, scale)
+    defer { UIGraphicsEndImageContext() }
+
+    // Use high quality interpolation
+    let context = UIGraphicsGetCurrentContext()
+    context?.interpolationQuality = .high
+
+    image.draw(in: CGRect(origin: .zero, size: scaledSize))
+    let scaledImage = UIGraphicsGetImageFromCurrentImageContext()
+
+    // Scale back to point size while maintaining quality
+    if let scaled = scaledImage {
+        return UIImage(cgImage: scaled.cgImage!, scale: scale, orientation: scaled.imageOrientation)
+    }
+    return nil
+}
+
+/// Legacy resize function (kept for backward compatibility)
+func resizeImage(_ image: UIImage, to size: CGSize) -> UIImage? {
+    return resizeImageHighQuality(image, to: size)
 }

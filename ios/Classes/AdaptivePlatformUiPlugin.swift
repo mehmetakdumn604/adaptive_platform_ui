@@ -12,7 +12,7 @@ public class AdaptivePlatformUiPlugin: NSObject, FlutterPlugin {
         }
 
         // Register iOS 26 Button platform view factory
-        let ios26ButtonFactory = iOS26ButtonViewFactory(messenger: registrar.messenger())
+        let ios26ButtonFactory = iOS26ButtonViewFactory(messenger: registrar.messenger(), registrar: registrar)
         registrar.register(
             ios26ButtonFactory,
             withId: "adaptive_platform_ui/ios26_button"

@@ -37,7 +37,8 @@ class AdaptiveButton extends StatelessWidget {
   }) : child = null,
        icon = null,
        iconColor = null,
-       sfSymbol = null;
+       sfSymbol = null,
+       platformIcon = null;
 
   /// Creates an adaptive button with a custom child widget
   const AdaptiveButton.child({
@@ -56,7 +57,8 @@ class AdaptiveButton extends StatelessWidget {
        textColor = null,
        icon = null,
        iconColor = null,
-       sfSymbol = null;
+       sfSymbol = null,
+       platformIcon = null;
 
   /// Creates an adaptive button with an icon
   const AdaptiveButton.icon({
@@ -75,7 +77,8 @@ class AdaptiveButton extends StatelessWidget {
   }) : label = null,
        textColor = null,
        child = null,
-       sfSymbol = null;
+       sfSymbol = null,
+       platformIcon = null;
 
   /// Creates an adaptive button with a native SF Symbol icon (iOS only)
   const AdaptiveButton.sfSymbol({
@@ -94,7 +97,41 @@ class AdaptiveButton extends StatelessWidget {
        textColor = null,
        child = null,
        icon = null,
-       iconColor = null;
+       iconColor = null,
+       platformIcon = null;
+
+  /// Creates an adaptive button with a platform icon (SF Symbol, Asset, or SVG)
+  /// 
+  /// This constructor supports:
+  /// - SF Symbols (Apple's system icons)
+  /// - Asset images (PNG, JPEG, etc.)
+  /// - SVG images
+  ///
+  /// Example:
+  /// ```dart
+  /// AdaptiveButton.platformIcon(
+  ///   onPressed: () {},
+  ///   platformIcon: PlatformIcon.asset('assets/icons/custom.png', size: 24),
+  /// )
+  /// ```
+  const AdaptiveButton.platformIcon({
+    super.key,
+    required this.onPressed,
+    required this.platformIcon,
+    this.color,
+    this.style = AdaptiveButtonStyle.glass,
+    this.size = AdaptiveButtonSize.medium,
+    this.padding,
+    this.borderRadius,
+    this.minSize,
+    this.enabled = true,
+    this.useSmoothRectangleBorder = true,
+  }) : label = null,
+       textColor = null,
+       child = null,
+       icon = null,
+       iconColor = null,
+       sfSymbol = null;
 
   /// The callback that is called when the button is tapped
   final VoidCallback? onPressed;
@@ -110,6 +147,10 @@ class AdaptiveButton extends StatelessWidget {
 
   /// The SF Symbol to display (used in .sfSymbol constructor)
   final SFSymbol? sfSymbol;
+
+  /// The platform icon to display (used in .platformIcon constructor)
+  /// Supports SF Symbols, Asset images (PNG/JPEG), and SVG images
+  final PlatformIcon? platformIcon;
 
   /// The color of the button
   ///
@@ -150,7 +191,25 @@ class AdaptiveButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // iOS 26+ - Use native iOS 26 button design
     if (PlatformInfo.isIOS26OrHigher()) {
-      // SF Symbol mode - use native SF Symbol rendering
+      // Platform Icon mode - use native icon rendering (SF Symbol, Asset, or SVG)
+      if (platformIcon != null) {
+        return _wrapIOSButton(
+          IOS26Button.platformIcon(
+            onPressed: onPressed,
+            platformIcon: platformIcon!,
+            style: _mapToIOS26Style(style),
+            size: _mapToIOS26Size(size),
+            color: color,
+            enabled: enabled,
+            padding: padding,
+            borderRadius: borderRadius,
+            minSize: minSize,
+            useSmoothRectangleBorder: useSmoothRectangleBorder,
+          ),
+        );
+      }
+      
+      // SF Symbol mode - use native SF Symbol rendering (legacy support)
       if (sfSymbol != null) {
         return _wrapIOSButton(
           IOS26Button.sfSymbol(

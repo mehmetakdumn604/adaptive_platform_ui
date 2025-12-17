@@ -1,6 +1,6 @@
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 
 /// Demo page showcasing AdaptiveButton features
 class ButtonDemoPage extends StatefulWidget {
@@ -19,9 +19,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
         title: "Buttons",
         actions: [
           AdaptiveAppBarAction(
-            icon: PlatformInfo.isIOS
-                ? CupertinoIcons.info_circle
-                : Icons.info_outline,
+            icon: PlatformInfo.isIOS ? CupertinoIcons.info_circle : Icons.info_outline,
             iosSymbol: "info.circle",
             onPressed: () => _showMessage(context, 'Info button pressed'),
           ),
@@ -35,12 +33,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
     final topPadding = PlatformInfo.isIOS ? 130.0 : 16.0;
 
     return ListView(
-      padding: EdgeInsets.only(
-        left: 16.0,
-        right: 16.0,
-        top: topPadding,
-        bottom: 16.0,
-      ),
+      padding: EdgeInsets.only(left: 16.0, right: 16.0, top: topPadding, bottom: 16.0),
       children: [
         if (PlatformInfo.isIOS26OrHigher())
           _buildSection(
@@ -53,8 +46,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: PlatformInfo.isIOS
-                      ? (MediaQuery.platformBrightnessOf(context) ==
-                                Brightness.dark
+                      ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                             ? CupertinoColors.white
                             : CupertinoColors.black)
                       : Theme.of(context).colorScheme.onSurface,
@@ -67,8 +59,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                   size: AdaptiveButtonSize.large,
                   style: AdaptiveButtonStyle.prominentGlass,
                   textColor: Colors.white,
-                  onPressed: () =>
-                      _showMessage(context, 'Default button pressed'),
+                  onPressed: () => _showMessage(context, 'Default button pressed'),
                   label: 'Click Me',
                 ),
               ),
@@ -79,8 +70,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: PlatformInfo.isIOS
-                      ? (MediaQuery.platformBrightnessOf(context) ==
-                                Brightness.dark
+                      ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                             ? CupertinoColors.white
                             : CupertinoColors.black)
                       : Theme.of(context).colorScheme.onSurface,
@@ -98,13 +88,39 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
               ),
               const SizedBox(height: 16),
               Text(
+                'Button with PNG Asset Icon',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: PlatformInfo.isIOS
+                      ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black)
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: AdaptiveButton.platformIcon(
+                  size: AdaptiveButtonSize.large,
+                  style: AdaptiveButtonStyle.prominentGlass,
+                  onPressed: () => _showMessage(context, 'PNG asset icon button pressed'),
+                  platformIcon: PlatformIcon.asset(
+                    'assets/icons/custom_icon.png',
+                    size: 24,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
                 'Disabled Button',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: PlatformInfo.isIOS
-                      ? (MediaQuery.platformBrightnessOf(context) ==
-                                Brightness.dark
+                      ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                             ? CupertinoColors.white
                             : CupertinoColors.black)
                       : Theme.of(context).colorScheme.onSurface,
@@ -140,8 +156,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -151,8 +166,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
             SizedBox(
               width: double.infinity,
               child: AdaptiveButton(
-                onPressed: () =>
-                    _showMessage(context, 'Default button pressed'),
+                onPressed: () => _showMessage(context, 'Default button pressed'),
                 label: 'Click Me',
               ),
             ),
@@ -163,8 +177,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -175,9 +188,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
               width: double.infinity,
               child: AdaptiveButton.icon(
                 onPressed: () => _showMessage(context, 'Icon button pressed'),
-                icon: PlatformInfo.isIOS
-                    ? CupertinoIcons.heart_fill
-                    : Icons.favorite,
+                icon: PlatformInfo.isIOS ? CupertinoIcons.heart_fill : Icons.favorite,
               ),
             ),
             const SizedBox(height: 16),
@@ -187,8 +198,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -212,8 +222,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -232,8 +241,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -252,8 +260,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -272,8 +279,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -292,8 +298,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -318,8 +323,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -343,8 +347,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -383,8 +386,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: PlatformInfo.isIOS
-                    ? (MediaQuery.platformBrightnessOf(context) ==
-                              Brightness.dark
+                    ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                           ? CupertinoColors.white
                           : CupertinoColors.black)
                     : Theme.of(context).colorScheme.onSurface,
@@ -396,9 +398,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
               children: [
                 _buildIconButton(
                   context,
-                  icon: PlatformInfo.isIOS
-                      ? CupertinoIcons.heart
-                      : Icons.favorite_border,
+                  icon: PlatformInfo.isIOS ? CupertinoIcons.heart : Icons.favorite_border,
                   label: 'Like',
                 ),
                 _buildIconButton(
@@ -408,16 +408,12 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 ),
                 _buildIconButton(
                   context,
-                  icon: PlatformInfo.isIOS
-                      ? CupertinoIcons.bookmark
-                      : Icons.bookmark_border,
+                  icon: PlatformInfo.isIOS ? CupertinoIcons.bookmark : Icons.bookmark_border,
                   label: 'Save',
                 ),
                 _buildIconButton(
                   context,
-                  icon: PlatformInfo.isIOS
-                      ? CupertinoIcons.ellipsis
-                      : Icons.more_horiz,
+                  icon: PlatformInfo.isIOS ? CupertinoIcons.ellipsis : Icons.more_horiz,
                   label: 'More',
                 ),
               ],
@@ -430,8 +426,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: PlatformInfo.isIOS
-                      ? (MediaQuery.platformBrightnessOf(context) ==
-                                Brightness.dark
+                      ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                             ? CupertinoColors.white
                             : CupertinoColors.black)
                       : Theme.of(context).colorScheme.onSurface,
@@ -442,20 +437,32 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _buildIos26IconButton(context, icon: "heart", label: 'Like'),
-                  _buildIos26IconButton(
+                  _buildIos26IconButton(context, icon: "square.and.arrow.up", label: 'Share'),
+                  _buildIos26IconButton(context, icon: "bookmark", label: 'Save'),
+                  _buildIos26IconButton(context, icon: "ellipsis", label: 'More'),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'With PNG Asset Icon',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: PlatformInfo.isIOS
+                      ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black)
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildIos26AssetIconButton(
                     context,
-                    icon: "square.and.arrow.up",
-                    label: 'Share',
-                  ),
-                  _buildIos26IconButton(
-                    context,
-                    icon: "bookmark",
-                    label: 'Save',
-                  ),
-                  _buildIos26IconButton(
-                    context,
-                    icon: "ellipsis",
-                    label: 'More',
+                    assetPath: 'assets/icons/house.png',
+                    label: 'House',
                   ),
                 ],
               ),
@@ -468,8 +475,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: PlatformInfo.isIOS
-                      ? (MediaQuery.platformBrightnessOf(context) ==
-                                Brightness.dark
+                      ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
                             ? CupertinoColors.white
                             : CupertinoColors.black)
                       : Theme.of(context).colorScheme.onSurface,
@@ -479,26 +485,10 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildIos26CircularButton(
-                    context,
-                    icon: "heart",
-                    label: 'Like',
-                  ),
-                  _buildIos26CircularButton(
-                    context,
-                    icon: "square.and.arrow.up",
-                    label: 'Share',
-                  ),
-                  _buildIos26CircularButton(
-                    context,
-                    icon: "bookmark",
-                    label: 'Save',
-                  ),
-                  _buildIos26CircularButton(
-                    context,
-                    icon: "ellipsis",
-                    label: 'More',
-                  ),
+                  _buildIos26CircularButton(context, icon: "heart", label: 'Like'),
+                  _buildIos26CircularButton(context, icon: "square.and.arrow.up", label: 'Share'),
+                  _buildIos26CircularButton(context, icon: "bookmark", label: 'Save'),
+                  _buildIos26CircularButton(context, icon: "ellipsis", label: 'More'),
                 ],
               ),
             ],
@@ -522,16 +512,12 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: PlatformInfo.isIOS
-            ? (isDark
-                  ? CupertinoColors.darkBackgroundGray
-                  : CupertinoColors.white)
+            ? (isDark ? CupertinoColors.darkBackgroundGray : CupertinoColors.white)
             : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: PlatformInfo.isIOS
-              ? (isDark
-                    ? CupertinoColors.systemGrey4
-                    : CupertinoColors.separator)
+              ? (isDark ? CupertinoColors.systemGrey4 : CupertinoColors.separator)
               : Theme.of(context).dividerColor,
           width: 0.5,
         ),
@@ -556,11 +542,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
     );
   }
 
-  Widget _buildIconButton(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-  }) {
+  Widget _buildIconButton(BuildContext context, {required IconData icon, required String label}) {
     return Column(
       children: [
         SizedBox(
@@ -654,17 +636,57 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
     );
   }
 
+  Widget _buildIos26AssetIconButton(
+    BuildContext context, {
+    required String assetPath,
+    required String label,
+  }) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 38,
+              height: 38,
+              child: AdaptiveButton.platformIcon(
+                onPressed: () => _showMessage(context, '$label pressed'),
+                style: AdaptiveButtonStyle.prominentGlass,
+                platformIcon: PlatformIcon.asset(assetPath, size: 10),
+              ),
+            ),
+
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: AdaptiveButton.platformIcon(
+                onPressed: () => _showMessage(context, '$label pressed'),
+                style: AdaptiveButtonStyle.prominentGlass,
+                platformIcon: PlatformIcon.svg("assets/icons/example.svg", size: 10),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: PlatformInfo.isIOS
+                ? (MediaQuery.platformBrightnessOf(context) == Brightness.dark
+                      ? CupertinoColors.systemGrey
+                      : CupertinoColors.systemGrey2)
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
   void _showMessage(BuildContext context, String message) {
     AdaptiveAlertDialog.show(
       context: context,
       title: message,
-      actions: [
-        AlertAction(
-          title: 'OK',
-          onPressed: () {},
-          style: AlertActionStyle.defaultAction,
-        ),
-      ],
+      actions: [AlertAction(title: 'OK', onPressed: () {}, style: AlertActionStyle.defaultAction)],
     );
   }
 }
