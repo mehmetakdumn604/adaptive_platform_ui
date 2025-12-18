@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import '../../style/sf_symbol.dart';
 import '../adaptive_scaffold.dart';
 
 /// Native iOS 26 tab bar using UITabBar platform view
@@ -44,7 +45,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
   bool? _lastIsDark;
   double? _intrinsicHeight;
   List<String>? _lastLabels;
-  List<String>? _lastSymbols;
+  List<Map<String, dynamic>>? _lastIcons;
   List<int?>? _lastBadgeCounts;
   TabBarMinimizeBehavior? _lastMinimizeBehavior;
 
@@ -72,6 +73,48 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
     super.dispose();
   }
 
+  /// Convert icon to a map that native side can understand
+  Map<String, dynamic> _iconToMap(dynamic icon) {
+    if (icon is PlatformIcon) {
+      if (icon is SFSymbolIcon) {
+        return {
+          'type': 'sfSymbol',
+          'name': icon.name,
+          'size': icon.size,
+          if (icon.color != null) 'color': _colorToARGB(icon.color!),
+        };
+      } else if (icon is AssetIcon) {
+        return {
+          'type': 'asset',
+          'path': icon.assetPath,
+          'size': icon.size,
+          if (icon.color != null) 'color': _colorToARGB(icon.color!),
+        };
+      } else if (icon is SvgIcon) {
+        return {
+          'type': 'svg',
+          'path': icon.assetPath,
+          'size': icon.size,
+          if (icon.color != null) 'color': _colorToARGB(icon.color!),
+        };
+      }
+    } else if (icon is String) {
+      // Legacy: String is treated as SF Symbol name
+      return {
+        'type': 'sfSymbol',
+        'name': icon,
+        'size': 24.0,
+      };
+    }
+    
+    // Fallback: empty/invalid icon
+    return {
+      'type': 'sfSymbol',
+      'name': 'circle',
+      'size': 24.0,
+    };
+  }
+
   int _colorToARGB(Color color) {
     // Resolve CupertinoDynamicColor if needed
     Color resolvedColor = color;
@@ -93,11 +136,9 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
   Widget build(BuildContext context) {
     if (!kIsWeb && Platform.isIOS) {
       final labels = widget.destinations.map((e) => e.label).toList();
-      final symbols = widget.destinations.map((e) {
-        final icon = e.icon;
-        if (icon is String) return icon;
-        return '';
-      }).toList();
+      
+      // Convert icons to a format native side can understand
+      final icons = widget.destinations.map((e) => _iconToMap(e.icon)).toList();
 
       final searchFlags = widget.destinations.map((e) => e.isSearch).toList();
       final badgeCounts = widget.destinations.map((e) => e.badgeCount).toList();
@@ -107,7 +148,7 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
 
       final creationParams = <String, dynamic>{
         'labels': labels,
-        'sfSymbols': symbols,
+        'icons': icons,
         'searchFlags': searchFlags,
         'badgeCounts': badgeCounts,
         'spacerFlags': spacerFlags,
@@ -243,25 +284,25 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
 
     // Items update (for hot reload or dynamic changes)
     final labels = widget.destinations.map((e) => e.label).toList();
-    final symbols = widget.destinations.map((e) {
-      final icon = e.icon;
-      if (icon is String) return icon;
-      return '';
-    }).toList();
+    final icons = widget.destinations.map((e) => _iconToMap(e.icon)).toList();
     final searchFlags = widget.destinations.map((e) => e.isSearch).toList();
     final badgeCounts = widget.destinations.map((e) => e.badgeCount).toList();
 
-    if (_lastLabels?.join('|') != labels.join('|') ||
-        _lastSymbols?.join('|') != symbols.join('|')) {
+    // Check if items changed by comparing JSON representation
+    final iconsChanged = _lastIcons == null || 
+        _lastIcons!.length != icons.length ||
+        !_iconsEqual(_lastIcons!, icons);
+    
+    if (_lastLabels?.join('|') != labels.join('|') || iconsChanged) {
       await ch.invokeMethod('setItems', {
         'labels': labels,
-        'sfSymbols': symbols,
+        'icons': icons,
         'searchFlags': searchFlags,
         'badgeCounts': badgeCounts,
         'selectedIndex': widget.selectedIndex,
       });
       _lastLabels = labels;
-      _lastSymbols = symbols;
+      _lastIcons = icons;
       _requestIntrinsicSize();
     }
 
@@ -297,12 +338,23 @@ class _IOS26NativeTabBarState extends State<IOS26NativeTabBar> {
 
   void _cacheItems() {
     _lastLabels = widget.destinations.map((e) => e.label).toList();
-    _lastSymbols = widget.destinations.map((e) {
-      final icon = e.icon;
-      if (icon is String) return icon;
-      return '';
-    }).toList();
+    _lastIcons = widget.destinations.map((e) => _iconToMap(e.icon)).toList();
     _lastBadgeCounts = widget.destinations.map((e) => e.badgeCount).toList();
+  }
+
+  /// Compare two lists of icon maps for equality
+  bool _iconsEqual(List<Map<String, dynamic>> a, List<Map<String, dynamic>> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      final aMap = a[i];
+      final bMap = b[i];
+      if (aMap['type'] != bMap['type']) return false;
+      if (aMap['name'] != bMap['name']) return false;
+      if (aMap['path'] != bMap['path']) return false;
+      if (aMap['size'] != bMap['size']) return false;
+      if (aMap['color'] != bMap['color']) return false;
+    }
+    return true;
   }
 
   Future<void> _requestIntrinsicSize() async {

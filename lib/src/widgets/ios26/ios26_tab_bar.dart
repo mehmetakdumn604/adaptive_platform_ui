@@ -1,5 +1,8 @@
 import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
+
+import '../../style/sf_symbol.dart';
 import '../adaptive_scaffold.dart';
 
 /// iOS 26 styled tab bar with Liquid Glass effect
@@ -64,11 +67,7 @@ class IOS26TabBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 class _TabBarItem extends StatelessWidget {
-  const _TabBarItem({
-    required this.destination,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _TabBarItem({required this.destination, required this.isSelected, required this.onTap});
 
   final AdaptiveNavigationDestination destination;
   final bool isSelected;
@@ -93,7 +92,7 @@ class _TabBarItem extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(_getIcon(), color: iconColor, size: 24),
+          _buildIconWidget(iconColor),
           const SizedBox(height: 2),
           Text(
             destination.label,
@@ -108,15 +107,76 @@ class _TabBarItem extends StatelessWidget {
     );
   }
 
-  IconData _getIcon() {
+  /// Build icon widget based on icon type
+  Widget _buildIconWidget(Color iconColor) {
     final icon = isSelected && destination.selectedIcon != null
         ? destination.selectedIcon
         : destination.icon;
 
+    // If icon is a PlatformIcon, render it as a widget
+    if (icon is PlatformIcon) {
+      return SizedBox(
+        width: 24,
+        height: 24,
+        child: Center(child: _renderPlatformIcon(icon, iconColor)),
+      );
+    }
+
+    // Otherwise, convert to IconData and render as Icon
+    return Icon(_iconToIconData(icon), color: iconColor, size: 24);
+  }
+
+  /// Render PlatformIcon as appropriate widget
+  Widget _renderPlatformIcon(PlatformIcon icon, Color iconColor) {
+    // For now, we'll use a simple approach:
+    // Return an Icon widget for SFSymbolIcon (since we have the mapping)
+    // For AssetIcon and SvgIcon, we could return Image.asset or custom widget
+    // But for tab bars, native rendering is handled elsewhere
+
+    if (icon is SFSymbolIcon) {
+      return Icon(
+        _sfSymbolToCupertinoIcon(icon.name),
+        color: icon.color ?? iconColor,
+        size: icon.size,
+      );
+    } else if (icon is AssetIcon) {
+      // Render PNG/JPEG asset
+      return Image.asset(
+        icon.assetPath,
+        width: icon.size,
+        height: icon.size,
+        color: icon.color ?? iconColor,
+        colorBlendMode: icon.color != null ? BlendMode.srcIn : null,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback if asset not found
+          return Icon(CupertinoIcons.photo, color: iconColor, size: icon.size);
+        },
+      );
+    } else if (icon is SvgIcon) {
+      // For SVG, we'd need flutter_svg or similar package
+      // For now, fallback to a placeholder
+      // TODO: Add SVG rendering support with flutter_svg package
+      return Icon(CupertinoIcons.photo, color: iconColor, size: icon.size);
+    }
+
+    // Fallback
+    return Icon(CupertinoIcons.circle, color: iconColor, size: 24);
+  }
+
+  /// Convert various icon types to IconData for rendering
+  IconData _iconToIconData(dynamic icon) {
     if (icon is IconData) {
       return icon;
     } else if (icon is String) {
       return _sfSymbolToCupertinoIcon(icon);
+    } else if (icon is PlatformIcon) {
+      // For PlatformIcon, return a placeholder IconData
+      // The actual rendering will be handled by native tab bar or custom widget
+      if (icon is SFSymbolIcon) {
+        return _sfSymbolToCupertinoIcon(icon.name);
+      }
+      // For AssetIcon and SvgIcon, use a generic icon as placeholder
+      return CupertinoIcons.photo;
     }
     return CupertinoIcons.circle;
   }

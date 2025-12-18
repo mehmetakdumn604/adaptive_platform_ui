@@ -661,7 +661,7 @@ class _ButtonDemoPageState extends State<ButtonDemoPage> {
               child: AdaptiveButton.platformIcon(
                 onPressed: () => _showMessage(context, '$label pressed'),
                 style: AdaptiveButtonStyle.prominentGlass,
-                platformIcon: PlatformIcon.svg("assets/icons/example.svg", size: 10),
+                platformIcon: PlatformIcon.svg("assets/icons/dhuhr.svg", size: 20),
               ),
             ),
           ],

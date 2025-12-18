@@ -47,13 +47,20 @@ class _TestTabColorsState extends State<TestTabColors> {
       ),
       bottomNavigationBar: AdaptiveBottomNavigationBar(
         items: [
-          AdaptiveNavigationDestination(icon: 'house', label: 'Home'),
+          // Example 1: PNG asset icon
           AdaptiveNavigationDestination(
-            icon: 'magnifyingglass',
+            icon: PlatformIcon.asset('assets/icons/house.png', size: 24),
+            label: 'Home',
+          ),
+          // Example 2: SF Symbol with PlatformIcon
+          AdaptiveNavigationDestination(
+            icon: PlatformIcon.sfSymbol('magnifyingglass', size: 24),
             label: 'Search',
             isSearch: true,
           ),
+          // Example 3: Legacy SF Symbol (String)
           AdaptiveNavigationDestination(icon: 'person', label: 'Profile'),
+          // Example 4: Legacy SF Symbol
           AdaptiveNavigationDestination(icon: 'gearshape', label: 'Settings'),
         ],
         selectedIndex: _selectedIndex,

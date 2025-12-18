@@ -85,32 +85,35 @@ class _DemoTabbarPageState extends State<DemoTabbarPage> {
 
         items: [
           AdaptiveNavigationDestination(
+            // Using PNG asset for iOS 26+
             icon: PlatformInfo.isIOS26OrHigher()
-                ? "house.fill"
+                ? PlatformIcon.asset('assets/icons/house.png', size: 26)
                 : PlatformInfo.isIOS
                 ? CupertinoIcons.home
                 : Icons.home_outlined,
             selectedIcon: PlatformInfo.isIOS26OrHigher()
-                ? "house.fill"
+                ? PlatformIcon.asset('assets/icons/house.png', size: 26)
                 : PlatformInfo.isIOS
                 ? CupertinoIcons.home
                 : Icons.home,
             label: 'Home',
           ),
           AdaptiveNavigationDestination(
+            // Using SVG asset for iOS 26+
             icon: PlatformInfo.isIOS26OrHigher()
-                ? "person.fill"
+                ? PlatformIcon.svg('assets/icons/star.svg', size: 26)
                 : PlatformInfo.isIOS
                 ? CupertinoIcons.person
                 : Icons.person_outline,
             selectedIcon: PlatformInfo.isIOS26OrHigher()
-                ? "person.fill"
+                ? PlatformIcon.svg('assets/icons/star.svg', size: 26)
                 : PlatformInfo.isIOS
                 ? CupertinoIcons.person_fill
                 : Icons.person,
             label: 'Profile',
           ),
           AdaptiveNavigationDestination(
+            // Using traditional SF Symbol string
             icon: PlatformInfo.isIOS26OrHigher()
                 ? "magnifyingglass"
                 : PlatformInfo.isIOS

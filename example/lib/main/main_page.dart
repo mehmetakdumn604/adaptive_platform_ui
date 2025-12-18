@@ -33,21 +33,24 @@ class _MainPageState extends State<MainPage> {
                   onTap: (index) => onDestinationSelected(index, context),
                   items: [
                     AdaptiveNavigationDestination(
+                      // Modern approach: PlatformIcon with PNG asset
                       icon: PlatformInfo.isIOS26OrHigher()
-                          ? "house.fill"
+                          ? PlatformIcon.asset('assets/icons/house.png', size: 24)
                           : PlatformInfo.isIOS
                           ? CupertinoIcons.home
                           : Icons.home_outlined,
-
-                      selectedIcon: PlatformInfo.isIOS
+                      selectedIcon: PlatformInfo.isIOS26OrHigher()
+                          ? PlatformIcon.asset('assets/icons/house.png', size: 24)
+                          : PlatformInfo.isIOS
                           ? CupertinoIcons.home
                           : Icons.home,
                       label: 'Home',
                       badgeCount: 1,
                     ),
                     AdaptiveNavigationDestination(
+                      // Using PlatformIcon with SF Symbol
                       icon: PlatformInfo.isIOS26OrHigher()
-                          ? "info.circle"
+                          ? PlatformIcon.sfSymbol('info.circle', size: 24)
                           : PlatformInfo.isIOS
                           ? CupertinoIcons.info
                           : Icons.info_outline,
@@ -57,6 +60,7 @@ class _MainPageState extends State<MainPage> {
                       label: 'Info',
                     ),
                     AdaptiveNavigationDestination(
+                      // Legacy approach (still works)
                       icon: PlatformInfo.isIOS26OrHigher()
                           ? "magnifyingglass"
                           : PlatformInfo.isIOS
