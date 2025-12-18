@@ -1,7 +1,7 @@
+import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:adaptive_platform_ui/adaptive_platform_ui.dart';
 
 /// Demo page showcasing AdaptiveButton features
 class DemoTabbarPage extends StatefulWidget {
@@ -65,11 +65,7 @@ class _DemoTabbarPageState extends State<DemoTabbarPage> {
         title: 'Tabbar Demos',
         actions: [
           AdaptiveAppBarAction(onPressed: () {}, title: "Title"),
-          AdaptiveAppBarAction(
-            onPressed: () {},
-            icon: Icons.info,
-            iosSymbol: "info.circle",
-          ),
+          AdaptiveAppBarAction(onPressed: () {}, icon: Icons.info, iosSymbol: "info.circle"),
         ],
       ),
       bottomNavigationBar: AdaptiveBottomNavigationBar(
@@ -101,12 +97,12 @@ class _DemoTabbarPageState extends State<DemoTabbarPage> {
           AdaptiveNavigationDestination(
             // Using SVG asset for iOS 26+
             icon: PlatformInfo.isIOS26OrHigher()
-                ? PlatformIcon.svg('assets/icons/star.svg', size: 26)
+                ? PlatformIcon.svg('assets/icons/dhuhr.svg', size: 26)
                 : PlatformInfo.isIOS
                 ? CupertinoIcons.person
                 : Icons.person_outline,
             selectedIcon: PlatformInfo.isIOS26OrHigher()
-                ? PlatformIcon.svg('assets/icons/star.svg', size: 26)
+                ? PlatformIcon.svg('assets/icons/dhuhr.svg', size: 26)
                 : PlatformInfo.isIOS
                 ? CupertinoIcons.person_fill
                 : Icons.person,
